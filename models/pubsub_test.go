@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"gitlab.dj/djnetevents/app"
+	"gitlab.dj/libs/djnetevents/app"
 	"testing"
 )
 

@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/streadway/amqp"
-	"gitlab.dj/djnetevents/app"
+	"gitlab.dj/libs/djnetevents/app"
 )
 
 type EventPubSub struct {
