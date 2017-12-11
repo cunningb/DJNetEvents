@@ -1,0 +1,3 @@
+
+# Url for RabbitMq server to talk to
+url: "amqp://userName:password@hostName:portNumber/virtualHost"
