@@ -5,14 +5,26 @@ import (
 	"gitlab.dj/libs/djnetevents/app"
 )
 
+type PubSubState uint32
+
+const (
+	INIT PubSubState = iota
+	CONNECTED
+	RECONNECTING
+	SHUTDOWN
+)
+
 type EventPubSub struct {
 	Conn         *amqp.Connection
 	Channel      *amqp.Channel
 	ExchangeName string
 	Logger       app.Logger
+	State        PubSubState
 }
 
 func (ps *EventPubSub) Close() {
+	ps.State = SHUTDOWN
+
 	if ps.Channel != nil {
 		ps.Channel.Close()
 	}
@@ -22,43 +34,58 @@ func (ps *EventPubSub) Close() {
 	}
 }
 
+func (ps *EventPubSub) Reconnect() error {
+	if ps.State == SHUTDOWN {
+		ps.Logger.Infof("Connection attempt aborted")
+		return nil
+	}
+
+	conn, err := amqp.Dial(app.Config.Url)
+	if err != nil {
+		ps.Logger.Warnf("Failed to establish rbmq connection with %s: %s", app.Config.Url, err)
+		return err
+	}
+
+	ps.Conn = conn
+
+	ch, err := conn.Channel()
+	if err != nil {
+		ps.Logger.Warnf("Failed to create channel: %s", err)
+		return err
+	}
+
+	ps.Channel = ch
+
+	err = ps.Channel.ExchangeDeclare(
+		ps.ExchangeName, // name
+		"topic",         // type
+		false,           // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
+	)
+
+	if err != nil {
+		ps.Logger.Warnf("Failed to bind exchange %s: %s", ps.ExchangeName, err)
+		return err
+	}
+
+	ps.State = CONNECTED
+	ps.Logger.Infof("Successfully connected to '%s', Exchange '%s'", app.Config.Url, ps.ExchangeName)
+
+	return nil
+}
+
 func NewPubSub(exchangeName string) (*EventPubSub, error) {
 	pub := &EventPubSub{}
 	pub.ExchangeName = exchangeName
 	pub.Logger = app.DefaultLogger
 
-	conn, err := amqp.Dial(app.Config.Url)
-	if err != nil {
-		conn.Close()
-		pub.Logger.Warnf("Failed to establish rbmq connection with %s: %s\n", app.Config.Url, err)
-		return nil, err
-	}
-
-	pub.Conn = conn
-
-	ch, err := conn.Channel()
-	if err != nil {
-		conn.Close()
-		ch.Close()
-		pub.Logger.Warnf("Failed to create channel: %s\n", err)
-		return nil, err
-	}
-
-	pub.Channel = ch
-
-	err = pub.Channel.ExchangeDeclare(
-		pub.ExchangeName, // name
-		"direct",         // type
-		true,             // durable
-		false,            // auto-deleted
-		false,            // internal
-		false,            // no-wait
-		nil,              // arguments
-	)
+	err := pub.Reconnect()
 
 	if err != nil {
 		pub.Close()
-		pub.Logger.Warnf("Failed to bind exchange %s: %s\n", pub.ExchangeName, err)
 		return nil, err
 	}
 

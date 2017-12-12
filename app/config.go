@@ -2,11 +2,12 @@ package app
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 var Config appConfig
@@ -14,6 +15,9 @@ var Config appConfig
 type appConfig struct {
 	// the adrdress of RabiitMq server
 	Url string `mapstructure:"url"`
+
+	// reconnect time in seconds
+	ReconnectSec int64 `mapstructure:"reconnect-sec"`
 }
 
 func (config appConfig) Validate() error {
@@ -113,6 +117,7 @@ func LoadConfig(configPath string) error {
 	v.AutomaticEnv()
 
 	v.SetDefault("url", "")
+	v.SetDefault("reconnect-sec", "5")
 
 	err := copyResources(fmt.Sprint(configPath, "resources"), fmt.Sprint(configPath, "config"))
 
