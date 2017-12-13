@@ -1,7 +1,9 @@
 ### How to use
 * Initialize by calling `func Initialize(config *RbmqConfig) error` inside `gitlab.dj/libs/djnetevents/app` package. 
 * Structure of the config is as follows, logger is optional
+
 ```golang
+
 // RbmqConfig structure for reference
 // RbmqConfig for RabbitMq configurations such as connection url
 //type RbmqConfig struct {
@@ -19,7 +21,9 @@ app.Initialize(&app.RbmqConfig{
 		ReconnectSec: 5,
 	})
 ```
+
 * Once initialized define a structure for the event. DJNet expects the event to contain server name (json field: *server*) and server type (json field: *stype*) fields in the json. Example:
+
 ```golang
 type ProxyJoinEvent struct {
 	Server     string `json:"server"`
@@ -27,9 +31,11 @@ type ProxyJoinEvent struct {
 	Name       string `json:"pname"`
 }
 ```
+
 * You need to decide on **exchange** and **route key** to send the event to. On plugin side of things, most event exchanges have the format of **PLUGIN-NAME.events**, for example DJNet events fired on the exchange `djnetworkessentials.events` while the routekey is the class of the event object, for example `netplayerproxyjoinevent` for event class `NetPlayerProxyJoinEvent`
 
 * To Publish events, you need to initialize a *Publisher* from `gitlab.dj/libs/djnetevents/models` package, serialize the event into json, and send using `func (ps *Publisher) Publish(data []byte, routeKey string) error` method
+
 ```golang
 import (
 	"encoding/json"
@@ -54,6 +60,7 @@ import (
 ```
 
 * To listen to the event, initialize a *Subscriber* from  `gitlab.dj/libs/djnetevents/models`, add bind a listener using `func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error` function (currently supports one listener per route key for given subscriber)
+
 ```golang
 import (
 	"encoding/json"
