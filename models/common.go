@@ -80,7 +80,7 @@ func (ps *EventPubSub) Reconnect() error {
 func NewPubSub(exchangeName string) (*EventPubSub, error) {
 	pub := &EventPubSub{}
 	pub.ExchangeName = exchangeName
-	pub.Logger = app.DefaultLogger
+	pub.Logger = app.Config.Logger
 
 	err := pub.Reconnect()
 

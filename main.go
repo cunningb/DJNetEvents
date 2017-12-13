@@ -11,8 +11,10 @@ import (
 )
 
 func main() {
-	loadConfigs()
-
+	app.Initialize(&app.RbmqConfig{
+		Url:          "amqp://localhost",
+		ReconnectSec: 5,
+	})
 	testProxyJoin()
 }
 
@@ -22,17 +24,7 @@ type ProxyJoinEvent struct {
 	Name       string `json:"pname"`
 }
 
-func loadConfigs() error {
-	fmt.Println("Reading RabbitMQ config")
-	if err := app.LoadConfig("./"); err != nil {
-		return fmt.Errorf("Invalid application configuration: %s", err)
-	}
-
-	return nil
-}
-
 func testProxyJoin() {
-
 	exchange := "djnetworkessentials.events"
 	routeKey := "netplayerproxyjoinevent"
 

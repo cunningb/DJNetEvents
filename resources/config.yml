@@ -1,6 +1,0 @@
-
-# Url for RabbitMq server to talk to
-url: "amqp://userName:password@hostName:portNumber/virtualHost"
-
-# Reconnection frequency in-case of a disconnect
-reconnect-sec: 5
