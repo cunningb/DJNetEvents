@@ -6,14 +6,14 @@
 
 // RbmqConfig structure for reference
 // RbmqConfig for RabbitMq configurations such as connection url
-//type RbmqConfig struct {
+type RbmqConfig struct {
 	// Url for rabbitmq connection, must contain 'amqp://' or 'amqps://'
-//	Url string
+	Url string
 	// How frequently to try and reconnect to RabbitMq when connection is lost
-//	ReconnectSec int64
+	ReconnectSec int64
 	// Logger to use, optional
-//	Logger Logger
-//}
+	Logger Logger
+}
 
 // Example initialization
 app.Initialize(&app.RbmqConfig{
