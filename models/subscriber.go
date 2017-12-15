@@ -9,7 +9,6 @@ import (
 
 type Subscriber struct {
 	*EventPubSub
-	Queue     amqp.Queue
 	Listeners map[string]func(body []byte)
 }
 
@@ -20,21 +19,10 @@ func (sub *Subscriber) reconnectSub() error {
 		return err
 	}
 
-	q, err := sub.Channel.QueueDeclare(
-		"",    // name
-		false, // durable
-		false, // delete when unused
-		true,  // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-
 	if err != nil {
 		sub.Logger.Warnf("Failed to declare queue: %s", err)
 		return err
 	}
-
-	sub.Queue = q
 
 	for routeKey, consumer := range sub.Listeners {
 		if err := sub.Bind(routeKey, consumer); err != nil {
@@ -54,16 +42,7 @@ func NewSubscriber(exchangeName string) (*Subscriber, error) {
 		return nil, err
 	}
 
-	q, err := base.Channel.QueueDeclare(
-		"",    // name
-		false, // durable
-		false, // delete when unused
-		true,  // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-
-	sub := &Subscriber{base, q, make(map[string]func(body []byte))}
+	sub := &Subscriber{base, make(map[string]func(body []byte))}
 
 	if err != nil {
 		base.Close()
@@ -71,6 +50,12 @@ func NewSubscriber(exchangeName string) (*Subscriber, error) {
 		return nil, err
 	}
 
+	sub.registerNotifyClose()
+
+	return sub, nil
+}
+
+func (sub *Subscriber) registerNotifyClose() {
 	onClose := make(chan *amqp.Error)
 	sub.Channel.NotifyClose(onClose)
 
@@ -79,36 +64,54 @@ func NewSubscriber(exchangeName string) (*Subscriber, error) {
 		for err := range onClose {
 			if err != nil {
 				sub.Logger.Warnf("Subscriber Channel/Connection closed: %s", err)
-				if sub.State != RECONNECTING {
-					sub.State = RECONNECTING
-					go func() {
-
-						for {
-							err := sub.reconnectSub()
-
-							if err == nil {
-								return
-							}
-
-							if sub.State != RECONNECTING {
-								return
-							}
-
-							time.Sleep(time.Duration(app.Config.ReconnectSec) * time.Second)
-						}
-					}()
-				}
+				sub.startReconnectionTask()
 			}
 		}
 	}()
 
-	return sub, nil
+	sub.Logger.Info("Subscriber NotifyClose listener registered")
+}
+
+func (sub *Subscriber) startReconnectionTask() {
+	if sub.State != RECONNECTING {
+		sub.State = RECONNECTING
+		go func() {
+
+			for {
+				err := sub.reconnectSub()
+
+				if err == nil {
+					sub.registerNotifyClose()
+					return
+				}
+
+				if sub.State != RECONNECTING {
+					return
+				}
+
+				time.Sleep(time.Duration(app.Config.ReconnectSec) * time.Second)
+			}
+		}()
+	}
 }
 
 // Bind subscriber for given route key, redirecting messages to provided consumer
 func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error {
-	err := sub.Channel.QueueBind(
-		sub.Queue.Name,   // queue name
+	q, err := sub.Channel.QueueDeclare(
+		"",    // name
+		false, // durable
+		false, // delete when unused
+		true,  // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = sub.Channel.QueueBind(
+		q.Name,           // queue name
 		routeKey,         // route key
 		sub.ExchangeName, // Exchange name
 		false,
@@ -116,22 +119,22 @@ func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error {
 	)
 
 	if err != nil {
-		sub.Logger.Warnf("Failed to bind queue '%s' -> '%s.%s': %s", sub.Queue.Name, sub.ExchangeName, routeKey, err)
+		sub.Logger.Warnf("Failed to bind queue '%s' -> '%s.%s': %s", q.Name, sub.ExchangeName, routeKey, err)
 		return err
 	}
 
 	msgs, err := sub.Channel.Consume(
-		sub.Queue.Name, // Queue name
-		"",             // Consumer
-		true,           // Auto ack
-		false,          // Exclusive
-		false,          // No local
-		false,          // No wait
-		nil,            // Args
+		q.Name, // Queue name
+		"",     // Consumer
+		true,   // Auto ack
+		false,  // Exclusive
+		false,  // No local
+		false,  // No wait
+		nil,    // Args
 	)
 
 	if err != nil {
-		sub.Logger.Warnf("Failed to create consumer for queue '%s': %s", sub.Queue.Name, err)
+		sub.Logger.Warnf("Failed to create consumer for queue '%s': %s", q.Name, err)
 		return err
 	}
 
@@ -143,6 +146,6 @@ func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error {
 
 	sub.Listeners[routeKey] = consumer
 
-	sub.Logger.Debugf("Registered consumer for '%s'.'%s': Queue '%s'", sub.ExchangeName, routeKey, sub.Queue.Name)
+	sub.Logger.Debugf("Registered consumer for '%s'.'%s': Queue '%s'", sub.ExchangeName, routeKey, q.Name)
 	return nil
 }

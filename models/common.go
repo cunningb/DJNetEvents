@@ -5,13 +5,13 @@ import (
 	"gitlab.dj/libs/djnetevents/app"
 )
 
-type PubSubState uint32
+type PubSubState string
 
 const (
-	INIT PubSubState = iota
-	CONNECTED
-	RECONNECTING
-	SHUTDOWN
+	INIT         PubSubState = "INIT"
+	CONNECTED                = "CONNECTED"
+	RECONNECTING             = "RECONNECTING"
+	SHUTDOWN                 = "SHUTDOWN"
 )
 
 type EventPubSub struct {
@@ -52,6 +52,10 @@ func (ps *EventPubSub) Reconnect() error {
 	if err != nil {
 		ps.Logger.Warnf("Failed to create channel: %s", err)
 		return err
+	}
+
+	if err := ch.Confirm(false); err != nil {
+		ps.Logger.Warnf("Channel initialized, but confirm failed: %s", err)
 	}
 
 	ps.Channel = ch
