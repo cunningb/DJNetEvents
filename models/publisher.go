@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -65,6 +66,7 @@ func (pub *Publisher) startReconnectionTask() {
 	}
 }
 
+// Publish a slice of bytes to a specific routeKey
 func (ps *Publisher) Publish(data []byte, routeKey string) error {
 	err := ps.Channel.Publish(
 		ps.ExchangeName, // exchange
@@ -83,4 +85,15 @@ func (ps *Publisher) Publish(data []byte, routeKey string) error {
 	}
 
 	return err
+}
+
+// Publish an object to a routeKey. This will first marshal the object to JSON, and then publish it using the `(Publisher) Publish([]byte,string) (error)` function
+func (ps *Publisher) PublishJson(data interface{}, routeKey string) error {
+	json, err := json.Marshal(data)
+
+	if err != nil {
+		return err
+	}
+
+	return ps.Publish(json, routeKey)
 }
