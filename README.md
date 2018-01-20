@@ -1,5 +1,5 @@
 ### How to use
-* Initialize by calling `func Initialize(config *RbmqConfig) error` inside `gitlab.dj/libs/djnetevents/app` package. 
+* Initialize by calling `func Initialize(config *RbmqConfig) error` inside `github.com/cunningb/djnetevents/app` package. 
 * Structure of the config is as follows, logger is optional
 
 ```golang
@@ -34,13 +34,13 @@ type ProxyJoinEvent struct {
 
 * You need to decide on **exchange** and **route key** to send the event to. On plugin side of things, most event exchanges have the format of **PLUGIN-NAME.events**, for example DJNet events fired on the exchange `djnetworkessentials.events` while the routekey is the class of the event object, for example `netplayerproxyjoinevent` for event class `NetPlayerProxyJoinEvent`
 
-* To Publish events, you need to initialize a *Publisher* from `gitlab.dj/libs/djnetevents/models` package, serialize the event into json, and send using `func (ps *Publisher) Publish(data []byte, routeKey string) error` method
+* To Publish events, you need to initialize a *Publisher* from `github.com/cunningb/djnetevents/models` package, serialize the event into json, and send using `func (ps *Publisher) Publish(data []byte, routeKey string) error` method
 
 ```golang
 import (
 	"encoding/json"
-	"gitlab.dj/libs/djnetevents/app"
-	"gitlab.dj/libs/djnetevents/models"
+	"github.com/cunningb/djnetevents/app"
+	"github.com/cunningb/djnetevents/models"
 )
 	
 	exchange := "djnetworkessentials.events"
@@ -59,13 +59,13 @@ import (
 	pub.Publish(jsonBody, routeKey)
 ```
 
-* To listen to the event, initialize a *Subscriber* from  `gitlab.dj/libs/djnetevents/models`, add bind a listener using `func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error` function (currently supports one listener per route key for given subscriber)
+* To listen to the event, initialize a *Subscriber* from  `github.com/cunningb/djnetevents/models`, add bind a listener using `func (sub *Subscriber) Bind(routeKey string, consumer func(body []byte)) error` function (currently supports one listener per route key for given subscriber)
 
 ```golang
 import (
 	"encoding/json"
-	"gitlab.dj/libs/djnetevents/app"
-	"gitlab.dj/libs/djnetevents/models"
+	"github.com/cunningb/djnetevents/app"
+	"github.com/cunningb/djnetevents/models"
 )
 	exchange := "djnetworkessentials.events"
 	routeKey := "netplayerproxyjoinevent"

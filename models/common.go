@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/streadway/amqp"
-	"gitlab.dj/libs/djnetevents/app"
+	"github.com/cunningb/djnetevents/app"
 )
 
 type PubSubState string

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/streadway/amqp"
-	"gitlab.dj/libs/djnetevents/app"
+	"github.com/cunningb/djnetevents/app"
 )
 
 type Publisher struct {
