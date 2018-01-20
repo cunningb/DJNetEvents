@@ -6,8 +6,8 @@ import (
 
 	"time"
 
-	"gitlab.dj/libs/djnetevents/app"
-	"gitlab.dj/libs/djnetevents/models"
+	"github.com/cunningb/djnetevents/app"
+	"github.com/cunningb/djnetevents/models"
 )
 
 func main() {
